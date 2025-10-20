@@ -1,0 +1,55 @@
+services:
+  llama-server:
+    image: ghcr.io/ggerganov/llama.cpp:server
+    platform: linux/amd64
+    command:
+      - -hf
+      - unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --n-gpu-layers
+      - "-1"
+      - --threads
+      - "8"
+      - --threads-batch
+      - "6"
+      - --batch-size
+      - "512"
+      - --ubatch-size
+      - "256"
+      - --ctx-size
+      - "8192"
+      - --jinja
+    environment:
+      HUGGINGFACE_TOKEN: ${HUGGINGFACE_TOKEN}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./models:/models
+    restart: unless-stopped
+
+  litellm-proxy:
+    build:
+      context: .
+      args:
+        target: runtime
+    image: ghcr.io/berriai/litellm:main-stable
+    platform: linux/amd64
+    command:
+      - "--config"
+      - "/config/litellm_config.yaml"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "4000"
+      - "--num_workers"
+      - "8"
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm_config.yaml:/config/litellm_config.yaml:ro
+    depends_on:
+      - llama-server
+    restart: unless-stopped

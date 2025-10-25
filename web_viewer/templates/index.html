@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreeCAD Web Viewer 🎨</title>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+    
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        /* 왼쪽: 3D 뷰어 */
+        #viewer-container {
+            flex: 1;
+            position: relative;
+            background: #252525;
+        }
+        
+        #viewer {
+            width: 100%;
+            height: 100%;
+        }
+        
+        #viewer-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        #viewer-info h2 {
+            margin-bottom: 10px;
+            color: #4CAF50;
+        }
+        
+        /* 오른쪽: 채팅 */
+        #chat-container {
+            width: 400px;
+            display: flex;
+            flex-direction: column;
+            background: #2a2a2a;
+            border-left: 1px solid #444;
+        }
+        
+        #chat-header {
+            padding: 20px;
+            background: #333;
+            border-bottom: 1px solid #444;
+        }
+        
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        #chat-header h1 {
+            font-size: 20px;
+            margin: 0;
+        }
+        
+        .header-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #444;
+            color: #fff;
+            transition: all 0.2s;
+        }
+        
+        .btn-small:hover {
+            background: #555;
+            transform: translateY(-1px);
+        }
+        
+        .btn-small.shutdown {
+            background: #dc3545;
+        }
+        
+        .btn-small.shutdown:hover {
+            background: #c82333;
+        }
+        
+        .btn-small.files {
+            background: #007bff;
+        }
+        
+        .btn-small.files:hover {
+            background: #0056b3;
+        }
+        
+        .btn-small.new {
+            background: #28a745;
+        }
+        
+        .btn-small.new:hover {
+            background: #218838;
+        }
+        
+        #status {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        #status.connected {
+            color: #4CAF50;
+        }
+        
+        /* 객체 목록 패널 */
+        #objects-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 300px;
+            max-height: 400px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #444;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+        }
+        
+        #objects-panel.show {
+            display: block;
+            animation: slideUp 0.3s;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .objects-header {
+            padding: 12px 15px;
+            background: #333;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .objects-header h3 {
+            margin: 0;
+            font-size: 14px;
+            color: #4CAF50;
+        }
+        
+        .toggle-objects {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+        }
+        
+        .toggle-objects:hover {
+            color: #fff;
+        }
+        
+        #objects-list {
+            max-height: 350px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .object-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+        
+        .object-item:hover {
+            background: #333;
+            border-color: #555;
+        }
+        
+        .object-info {
+            flex: 1;
+        }
+        
+        .object-name {
+            font-size: 13px;
+            color: #fff;
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+        
+        .object-type {
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .btn-delete {
+            padding: 4px 10px;
+            font-size: 11px;
+            background: #dc3545;
+            border: none;
+            border-radius: 3px;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .btn-delete:hover {
+            background: #c82333;
+        }
+        
+        .no-objects {
+            padding: 30px 20px;
+            text-align: center;
+            color: #888;
+            font-size: 13px;
+        }
+        
+        /* 파일 브라우저 */
+        #file-browser {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            width: 350px;
+            max-height: 400px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            overflow: hidden;
+        }
+        
+        #file-browser.show {
+            display: block;
+            animation: slideDown 0.3s;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .file-browser-header {
+            padding: 15px;
+            background: #333;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .file-browser-header h3 {
+            margin: 0;
+            font-size: 14px;
+        }
+        
+        .close-browser {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            line-height: 20px;
+        }
+        
+        .close-browser:hover {
+            color: #fff;
+        }
+        
+        #file-list {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        
+        .file-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #333;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .file-item:hover {
+            background: #333;
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        
+        .file-name {
+            font-size: 13px;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        
+        .file-meta {
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .no-files {
+            padding: 40px 20px;
+            text-align: center;
+            color: #888;
+            font-size: 13px;
+        }
+        
+        #messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.user {
+            text-align: right;
+        }
+        
+        .message-content {
+            display: inline-block;
+            padding: 10px 15px;
+            border-radius: 12px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        
+        .message.user .message-content {
+            background: #0084ff;
+            color: white;
+        }
+        
+        .message.assistant .message-content {
+            background: #3a3a3a;
+            color: white;
+        }
+        
+        .message.system .message-content {
+            background: #444;
+            color: #aaa;
+            font-size: 13px;
+        }
+        
+        .thinking {
+            display: none;
+            text-align: center;
+            padding: 10px;
+            color: #888;
+            font-style: italic;
+        }
+        
+        .thinking.active {
+            display: block;
+        }
+        
+        .progress-step {
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: #2a2a2a;
+            border-left: 3px solid #0084ff;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #aaa;
+            animation: slideIn 0.3s;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        #input-container {
+            padding: 20px;
+            background: #333;
+            border-top: 1px solid #444;
+        }
+        
+        #input-form {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #message-input {
+            flex: 1;
+            padding: 12px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+        }
+        
+        #message-input:focus {
+            outline: none;
+            border-color: #0084ff;
+        }
+        
+        #send-button {
+            padding: 12px 24px;
+            background: #0084ff;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        #send-button:hover {
+            background: #0073e6;
+        }
+        
+        #send-button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        
+        /* 반응형 */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            
+            #viewer-container {
+                height: 50%;
+            }
+            
+            #chat-container {
+                width: 100%;
+                height: 50%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 3D 뷰어 -->
+    <div id="viewer-container">
+        <div id="viewer"></div>
+        <div id="viewer-info">
+            <h2>🎨 FreeCAD Viewer</h2>
+            <p>마우스로 회전, 휠로 확대/축소</p>
+            <p id="object-count">객체: 0개</p>
+        </div>
+        
+        <!-- 객체 목록 패널 -->
+        <div id="objects-panel" class="show">
+            <div class="objects-header">
+                <h3>📦 객체 목록</h3>
+                <button class="toggle-objects" onclick="toggleObjectsPanel()">−</button>
+            </div>
+            <div id="objects-list">
+                <div class="no-objects">객체가 없습니다</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 채팅 -->
+    <div id="chat-container">
+        <div id="chat-header">
+            <div class="header-row">
+                <h1>💬 FreeCAD Agent</h1>
+                <div class="header-buttons">
+                    <button class="btn-small new" onclick="newDocument()">📄 새문서</button>
+                    <button class="btn-small files" onclick="toggleFileBrowser()">📁 파일</button>
+                    <button class="btn-small shutdown" onclick="shutdownServer()">🛑 종료</button>
+                </div>
+            </div>
+            <p id="status">연결 중...</p>
+        </div>
+        
+        <!-- 파일 브라우저 -->
+        <div id="file-browser">
+            <div class="file-browser-header">
+                <h3>📁 저장된 모델</h3>
+                <button class="close-browser" onclick="toggleFileBrowser()">×</button>
+            </div>
+            <div id="file-list">
+                <div class="no-files">파일을 불러오는 중...</div>
+            </div>
+        </div>
+        
+        <div id="messages">
+            <div class="message system">
+                <div class="message-content">
+                    🎉 FreeCAD Web Viewer에 오신 것을 환영합니다!<br>
+                    원하는 3D 객체를 자유롭게 요청해보세요.
+                </div>
+            </div>
+        </div>
+        
+        <div class="thinking" id="thinking">
+            🤔 생각하는 중...
+        </div>
+        
+        <div id="input-container">
+            <form id="input-form">
+                <input 
+                    type="text" 
+                    id="message-input" 
+                    placeholder="예: 10x10x10 박스를 만들어줘"
+                    autocomplete="off"
+                >
+                <button type="submit" id="send-button">전송</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Socket.IO 연결
+        const socket = io();
+        
+        // Three.js 설정
+        let scene, camera, renderer, controls;
+        let currentModel = null;
+        
+        function initViewer() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x252525);
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(
+                75,
+                document.getElementById('viewer').offsetWidth / document.getElementById('viewer').offsetHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(50, 50, 50);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(
+                document.getElementById('viewer').offsetWidth,
+                document.getElementById('viewer').offsetHeight
+            );
+            document.getElementById('viewer').appendChild(renderer.domElement);
+            
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+            
+            // Grid
+            const gridHelper = new THREE.GridHelper(100, 20, 0x444444, 0x222222);
+            scene.add(gridHelper);
+            
+            // Axes
+            const axesHelper = new THREE.AxesHelper(20);
+            scene.add(axesHelper);
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+            
+            // 리사이즈
+            window.addEventListener('resize', () => {
+                camera.aspect = document.getElementById('viewer').offsetWidth / document.getElementById('viewer').offsetHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(
+                    document.getElementById('viewer').offsetWidth,
+                    document.getElementById('viewer').offsetHeight
+                );
+            });
+        }
+        
+        function loadModel(url) {
+            // 기존 모델 제거
+            if (currentModel) {
+                scene.remove(currentModel);
+            }
+            
+            // STL 로더
+            const loader = new THREE.STLLoader();
+            
+            loader.load(url, (geometry) => {
+                const material = new THREE.MeshPhongMaterial({
+                    color: 0x4CAF50,
+                    specular: 0x111111,
+                    shininess: 200
+                });
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                
+                // 중심으로 이동
+                geometry.computeBoundingBox();
+                const center = new THREE.Vector3();
+                geometry.boundingBox.getCenter(center);
+                mesh.position.sub(center);
+                
+                currentModel = mesh;
+                scene.add(mesh);
+                
+                // 카메라 조정
+                const size = geometry.boundingBox.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const fov = camera.fov * (Math.PI / 180);
+                let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+                cameraZ *= 2;
+                
+                camera.position.set(cameraZ, cameraZ, cameraZ);
+                camera.lookAt(0, 0, 0);
+                controls.update();
+            });
+        }
+        
+        // 메시지 추가
+        function addMessage(content, type = 'assistant') {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+            
+            messageDiv.appendChild(contentDiv);
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        // Socket.IO 이벤트
+        socket.on('connected', (data) => {
+            document.getElementById('status').textContent = `✅ 연결됨 (${data.session_id})`;
+            document.getElementById('status').classList.add('connected');
+        });
+        
+        // 진행 상황 표시 변수
+        let progressContainer = null;
+        
+        socket.on('user_message', (data) => {
+            // 이전 진행 상황 컨테이너 제거
+            if (progressContainer) {
+                progressContainer = null;
+            }
+            addMessage(data.message, 'user');
+        });
+        
+        socket.on('assistant_message', (data) => {
+            // 진행 상황 컨테이너 정리
+            progressContainer = null;
+            addMessage(data.message, 'assistant');
+        });
+        
+        socket.on('assistant_thinking', (data) => {
+            const thinking = document.getElementById('thinking');
+            if (data.thinking) {
+                thinking.classList.add('active');
+            } else {
+                thinking.classList.remove('active');
+            }
+        });
+        
+        socket.on('agent_progress', (data) => {
+            const messagesDiv = document.getElementById('messages');
+            
+            // 진행 상황 컨테이너가 없으면 생성
+            if (!progressContainer) {
+                progressContainer = document.createElement('div');
+                progressContainer.className = 'message assistant';
+                progressContainer.id = 'progress-container';
+                messagesDiv.appendChild(progressContainer);
+            }
+            
+            // 진행 단계 추가
+            const stepDiv = document.createElement('div');
+            stepDiv.className = 'progress-step';
+            stepDiv.textContent = data.step;
+            progressContainer.appendChild(stepDiv);
+            
+            // 스크롤 하단으로
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+        
+        socket.on('model_update', (data) => {
+            if (data.model_url) {
+                loadModel(data.model_url + '?t=' + Date.now());
+                updateObjectsList();  // 객체 목록 업데이트
+            } else {
+                // 모델 지우기
+                if (currentModel) {
+                    scene.remove(currentModel);
+                    currentModel = null;
+                }
+                updateObjectsList();
+            }
+        });
+        
+        // 폼 제출
+        document.getElementById('input-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (message) {
+                socket.emit('send_message', { message });
+                input.value = '';
+            }
+        });
+        
+        // 파일 브라우저 토글
+        function toggleFileBrowser() {
+            const browser = document.getElementById('file-browser');
+            if (browser.classList.contains('show')) {
+                browser.classList.remove('show');
+            } else {
+                browser.classList.add('show');
+                loadFiles();
+            }
+        }
+        
+        // 파일 목록 불러오기
+        async function loadFiles() {
+            try {
+                const response = await fetch('/list_files');
+                const data = await response.json();
+                const fileList = document.getElementById('file-list');
+                
+                if (data.files.length === 0) {
+                    fileList.innerHTML = '<div class="no-files">저장된 파일이 없습니다</div>';
+                    return;
+                }
+                
+                fileList.innerHTML = data.files.map(file => `
+                    <div class="file-item" onclick="loadFileFromBrowser('${file.name}')">
+                        <div class="file-name">📄 ${file.name}</div>
+                        <div class="file-meta">
+                            ${(file.size / 1024).toFixed(1)} KB • ${file.modified}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('파일 목록 로드 실패:', error);
+                document.getElementById('file-list').innerHTML = 
+                    '<div class="no-files">파일 목록을 불러올 수 없습니다</div>';
+            }
+        }
+        
+        // 파일 브라우저에서 파일 로드
+        async function loadFileFromBrowser(filename) {
+            try {
+                addMessage(`파일 로드: ${filename}`, 'system');
+                
+                const response = await fetch(`/load_file/${filename}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // STL 파일 로드
+                    loadModel(`/models/${data.stl_file}?t=${Date.now()}`);
+                    addMessage(`✅ ${filename}을(를) 불러왔습니다!`, 'system');
+                    toggleFileBrowser();
+                } else {
+                    addMessage(`❌ 파일 로드 실패: ${data.error}`, 'system');
+                }
+            } catch (error) {
+                console.error('파일 로드 실패:', error);
+                addMessage(`❌ 파일 로드 중 오류 발생`, 'system');
+            }
+        }
+        
+        // 서버 종료
+        async function shutdownServer() {
+            if (!confirm('정말로 서버를 종료하시겠습니까?')) {
+                return;
+            }
+            
+            try {
+                addMessage('🛑 서버를 종료합니다...', 'system');
+                
+                const response = await fetch('/shutdown', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    addMessage('✅ 서버가 종료되었습니다. 브라우저 창을 닫으셔도 됩니다.', 'system');
+                    
+                    // UI 비활성화
+                    document.getElementById('message-input').disabled = true;
+                    document.getElementById('send-button').disabled = true;
+                    document.getElementById('status').textContent = '서버 종료됨';
+                    document.getElementById('status').style.color = '#dc3545';
+                }
+            } catch (error) {
+                console.error('서버 종료 실패:', error);
+            }
+        }
+        
+        // 새 문서 생성
+        async function newDocument() {
+            if (!confirm('새 문서를 만들면 현재 작업이 모두 지워집니다. 계속하시겠습니까?')) {
+                return;
+            }
+            
+            try {
+                addMessage('📄 새 문서를 생성합니다...', 'system');
+                
+                const response = await fetch('/new_document', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    addMessage('✅ 새 문서가 생성되었습니다!', 'system');
+                    
+                    // 3D 뷰어 초기화
+                    if (currentModel) {
+                        scene.remove(currentModel);
+                        currentModel = null;
+                    }
+                    
+                    // 객체 카운트 초기화
+                    document.getElementById('object-count').textContent = '객체: 0개';
+                    
+                    // 객체 목록 업데이트
+                    updateObjectsList();
+                } else {
+                    addMessage(`❌ 새 문서 생성 실패: ${data.error}`, 'system');
+                }
+            } catch (error) {
+                console.error('새 문서 생성 실패:', error);
+                addMessage('❌ 새 문서 생성 중 오류 발생', 'system');
+            }
+        }
+        
+        // 객체 패널 토글
+        function toggleObjectsPanel() {
+            const panel = document.getElementById('objects-panel');
+            const button = panel.querySelector('.toggle-objects');
+            
+            if (panel.classList.contains('show')) {
+                panel.classList.remove('show');
+                button.textContent = '+';
+            } else {
+                panel.classList.add('show');
+                button.textContent = '−';
+            }
+        }
+        
+        // 객체 목록 업데이트
+        async function updateObjectsList() {
+            try {
+                const response = await fetch('/get_objects');
+                const data = await response.json();
+                const objectsList = document.getElementById('objects-list');
+                
+                if (data.count === 0) {
+                    objectsList.innerHTML = '<div class="no-objects">객체가 없습니다</div>';
+                    return;
+                }
+                
+                objectsList.innerHTML = data.objects.map(obj => `
+                    <div class="object-item">
+                        <div class="object-info">
+                            <div class="object-name">${obj.name}</div>
+                            <div class="object-type">${obj.type}</div>
+                        </div>
+                        <button class="btn-delete" onclick="deleteObject('${obj.name}')">🗑️</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('객체 목록 로드 실패:', error);
+            }
+        }
+        
+        // 객체 삭제
+        async function deleteObject(objectName) {
+            if (!confirm(`'${objectName}' 객체를 삭제하시겠습니까?`)) {
+                return;
+            }
+            
+            try {
+                addMessage(`🗑️  ${objectName} 삭제 중...`, 'system');
+                
+                const response = await fetch(`/delete_object/${objectName}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    addMessage(`✅ ${data.message}`, 'system');
+                    
+                    // 3D 모델 업데이트
+                    if (data.model_file) {
+                        loadModel(`/models/${data.model_file}?t=${Date.now()}`);
+                    } else {
+                        // 모든 객체가 삭제된 경우
+                        if (currentModel) {
+                            scene.remove(currentModel);
+                            currentModel = null;
+                        }
+                    }
+                    
+                    // 객체 카운트 업데이트
+                    document.getElementById('object-count').textContent = `객체: ${data.remaining}개`;
+                    
+                    // 객체 목록 업데이트
+                    updateObjectsList();
+                } else {
+                    addMessage(`❌ 삭제 실패: ${data.error}`, 'system');
+                }
+            } catch (error) {
+                console.error('객체 삭제 실패:', error);
+                addMessage('❌ 객체 삭제 중 오류 발생', 'system');
+            }
+        }
+        
+        // 초기화
+        initViewer();
+        updateObjectsList();  // 초기 객체 목록 로드
+    </script>
+</body>
+</html>
+

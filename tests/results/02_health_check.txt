@@ -1,0 +1,26 @@
+
+[1m=== Docker Compose 서비스 헬스체크 ===[0m
+
+[1m1. Docker 컨테이너 상태:[0m
+  [92m✓[0m Llama.cpp 서버 (llama-server): 실행 중 (ID: b23a3dbe651e)
+  [92m✓[0m LiteLLM Proxy (litellm-proxy): 실행 중 (ID: 528e56e1298f)
+  [92m✓[0m PostgreSQL (postgres): 실행 중 (ID: c36a24f86023)
+  [92m✓[0m Prometheus (prometheus): 실행 중 (ID: 467e553ba048)
+
+[1m2. API 엔드포인트 상태:[0m
+  [92m✓[0m Llama.cpp Health: 응답 성공 (200 OK)
+  [93m○[0m LiteLLM Health: HTTP 401
+  [92m✓[0m Prometheus Health: 응답 성공 (200 OK)
+
+[1m3. LiteLLM 사용 가능 모델:[0m
+  [93m○[0m HTTP 401
+
+[1m4. 데이터베이스 연결:[0m
+  [92m✓[0m PostgreSQL: 연결 가능
+
+[1m============================================================[0m
+[92m✓ 모든 서비스가 정상적으로 실행 중입니다![0m
+
+다음 단계:
+  - 모델 호환성 체크: [1mpython scripts/check_model_compatibility.py[0m
+

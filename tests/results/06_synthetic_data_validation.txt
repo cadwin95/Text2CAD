@@ -1,0 +1,29 @@
+합성 데이터 생성 검증 결과
+================================
+
+생성 일시: 2025-10-26 00:26:50
+
+✅ 개선 사항:
+1. fastmcp 패키지 설치 완료
+2. tool_calls 제대로 생성됨
+3. OpenAI function calling 포맷 적용
+4. finish 도구 호출도 포함
+
+데이터 구조:
+- user message
+- assistant with tool_calls (freecad_create_*)
+- tool response
+- assistant with finish tool_call
+
+생성된 데이터 수: 50개
+- box: 10개
+- cylinder: 10개  
+- sphere: 10개
+- cone: 10개
+- mixed: 10개
+
+다음 단계:
+1. ✅ 합성 데이터 생성 완료
+2. 🔄 실제 Agent 실행으로 데이터 수집
+3. 🔄 Fine-tuning 준비
+

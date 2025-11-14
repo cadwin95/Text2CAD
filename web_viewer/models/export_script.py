@@ -6,7 +6,7 @@ import sys
 try:
     # 문서 열기
     print("1. Opening document...")
-    doc = FreeCAD.openDocument("/Users/shkim5/Documents/cadai/web_viewer/models/model_20251026_023624.FCStd")
+    doc = FreeCAD.openDocument("/Users/shkim5/Documents/cadai/web_viewer/models/model_20251029_162859.FCStd")
     print("2. Document opened: " + doc.Name + ", Objects: " + str(len(doc.Objects)))
     
     # 모든 객체를 하나의 메시로 합치기
@@ -32,8 +32,8 @@ try:
         
         # STL 내보내기
         print("7. Exporting to STL...")
-        Mesh.export([mesh], "/Users/shkim5/Documents/cadai/web_viewer/models/model_20251026_023624.stl")
-        print("SUCCESS: STL export complete: /Users/shkim5/Documents/cadai/web_viewer/models/model_20251026_023624.stl")
+        Mesh.export([mesh], "/Users/shkim5/Documents/cadai/web_viewer/models/model_20251029_162859.stl")
+        print("SUCCESS: STL export complete: /Users/shkim5/Documents/cadai/web_viewer/models/model_20251029_162859.stl")
         
         FreeCAD.closeDocument(doc.Name)
         sys.exit(0)

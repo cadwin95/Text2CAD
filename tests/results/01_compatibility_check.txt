@@ -1,0 +1,39 @@
+
+[1m=== FreeCAD Tool Calling Agent 호환성 체크 ===[0m
+
+[1m시스템 정보:[0m
+  OS: Darwin 23.4.0
+  아키텍처: arm64
+
+[1mPython 버전:[0m
+  [92m✓[0m Python 3.13
+
+[1m필수 패키지:[0m
+  [92m✓[0m openai: 1.109.1
+  [92m✓[0m python-dotenv: 1.1.0
+  [92m✓[0m pydantic: 2.11.5
+  [92m✓[0m httpx: 0.28.1
+
+[1mAI/ML 패키지 (학습용):[0m
+  [93m○[0m unsloth: 미설치
+  [92m✓[0m torch: 2.7.0
+  [92m✓[0m transformers: 4.51.3
+
+[1mMCP 및 데이터 수집:[0m
+  [93m○[0m fastmcp: 미설치
+  [93m○[0m openpipe: 미설치
+
+[1mVL 모델용 패키지:[0m
+  [92m✓[0m pillow: 11.2.1
+
+[1mFreeCAD:[0m
+  [93m○[0m FreeCAD: 미설치 (선택사항)
+  [93m○[0m freecad-stubs: 미설치
+
+[1m============================================================[0m
+[92m✓ 핵심 의존성이 모두 충족되었습니다![0m
+
+다음 단계: [1muv sync[0m로 나머지 패키지를 설치하세요.
+
+[93m참고:[0m ○ 표시된 패키지는 선택사항입니다.
+

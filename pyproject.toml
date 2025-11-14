@@ -32,6 +32,10 @@ mcp = [
 openpipe = [
     "openpipe>=4.0.0",
 ]
+architecture = [
+    "langchain>=0.2.14",
+    "langchain-openai>=0.1.25",
+]
 
 cad = [
     "freecad-stubs>=0.21.0",

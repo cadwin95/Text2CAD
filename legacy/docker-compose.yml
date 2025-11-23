@@ -1,0 +1,72 @@
+services:
+  litellm-proxy:
+    build:
+      context: .
+      args:
+        target: runtime
+    image: ghcr.io/berriai/litellm:main-stable
+    platform: linux/amd64
+    command:
+      - "--config"
+      - "/litellm_config.yaml"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "4000"
+      - "--num_workers"
+      - "8"
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      STORE_MODEL_IN_DB: ${LITELLM_STORE_MODEL_IN_DB}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      LITELLM_DROP_PARAMS: ${LITELLM_DROP_PARAMS}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+    volumes:
+      - ./litellm_config.yaml:/litellm_config.yaml:ro
+    depends_on:
+      - postgres
+    restart: unless-stopped
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: litellm_postgres
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: llmproxy
+      POSTGRES_PASSWORD: dbpassword9090
+    ports:
+      - "5433:5432"  # External:Internal (로컬 PostgreSQL과 충돌 방지)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # 선택: 초기 1회 자동 확장 활성화 (이미 생성된 볼륨이면 실행되지 않음)
+      # - ./init/01_pgvector.sql:/docker-entrypoint-initdb.d/01_pgvector.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d litellm -U llmproxy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+  prometheus:
+    image: prom/prometheus
+    container_name: litellm_prometheus
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"  # External:Internal
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.listen-address=:9090"
+    restart: unless-stopped
+volumes:
+  postgres_data:
+  prometheus_data:
+
+networks:
+  default:
+    name: litellm_network
+    driver: bridge

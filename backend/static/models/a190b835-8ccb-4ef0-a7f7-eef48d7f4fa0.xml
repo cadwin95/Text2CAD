@@ -1,0 +1,15 @@
+<OCX version="3.0">
+  <Vessel name="DesignVessel">
+    <Structure>
+      <Panel name="Deck_Z3000" type="Deck">
+        <Material grade="A" thickness="10"/>
+        <Geometry type="Plate">
+          <Point x="0" y="-10000" z="3000"/>
+          <Point x="20000" y="-10000" z="3000"/>
+          <Point x="20000" y="10000" z="3000"/>
+          <Point x="0" y="10000" z="3000"/>
+        </Geometry>
+      </Panel>
+    </Structure>
+  </Vessel>
+</OCX>

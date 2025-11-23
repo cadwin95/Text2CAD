@@ -1,9 +1,6 @@
-"""
-FreeCAD Tool Calling Agent
-"""
+from .ocx_agent import OCXAgent
+from .generative_design import GenerativeDesignCoordinator
+from .ocx_code_agent import OCXCodeAgent
+from .code_executor import OcxCodeExecutor
 
-from .toolcalling import ToolCallingAgent
-from .vision import VisionAnalyzer
-
-__all__ = ["ToolCallingAgent", "VisionAnalyzer"]
-
+__all__ = ["OCXAgent", "OCXCodeAgent", "OcxCodeExecutor", "GenerativeDesignCoordinator"]

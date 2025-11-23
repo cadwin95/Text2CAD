@@ -2,9 +2,13 @@
 
 FreeCAD를 제어할 수 있는 AI Agent입니다. LiteLLM proxy를 통해 Qwen3-4B 모델을 사용하고, OpenPipe로 데이터를 수집하며, Unsloth로 fine-tuning합니다.
 
+> [!IMPORTANT]
+> **로컬 개발 권장**: 현재는 `./start_dev.sh`로 로컬 개발을 권장합니다. Docker는 고사양 환경이나 프로덕션 배포 시 사용하세요. 자세한 내용은 [DOCKER.md](DOCKER.md)를 참고하세요.
+
 ## 주요 기능
 
 - 🛠️ **FreeCAD Tool Calling**: 자연어로 CAD 모델 생성 (박스, 실린더, 구, 원뿔 등)
+- 🧱 **OCXBuilder Generative Design**: LLM이 파이썬 코드를 생성해 OCX XML을 자동 구축 (반복 계산/ID 관리 내장)
 - 🔄 **MCP 서버**: FastMCP를 사용한 도구 서버 구현
 - 📊 **데이터 수집**: OpenPipe를 통한 자동 로깅
 - 🤖 **Fine-tuning**: Unsloth로 Qwen 모델 fine-tuning
@@ -276,4 +280,3 @@ MIT License
 ## 기여
 
 이슈와 PR을 환영합니다!
-

@@ -1,0 +1,33 @@
+<OCX version="3.0">
+  <Vessel name="SimpleSailboat">
+    <Structure>
+      <Panel name="Deck_Main" type="Deck">
+        <Material grade="A" thickness="10"/>
+        <Geometry type="Plate">
+          <Point x="0" y="-2000" z="0"/>
+          <Point x="5000" y="-2000" z="0"/>
+          <Point x="5000" y="2000" z="0"/>
+          <Point x="0" y="2000" z="0"/>
+        </Geometry>
+      </Panel>
+      <Panel name="Hull_Shell" type="Shell">
+        <Material grade="A" thickness="12"/>
+        <Geometry type="Plate">
+          <Point x="0" y="-2000" z="0"/>
+          <Point x="5000" y="-2000" z="0"/>
+          <Point x="5000" y="-2000" z="-2000"/>
+          <Point x="0" y="-2000" z="-2000"/>
+        </Geometry>
+      </Panel>
+      <Panel name="Bulkhead_Transverse" type="Bulkhead">
+        <Material grade="A" thickness="10"/>
+        <Geometry type="Plate">
+          <Point x="2500" y="-2000" z="0"/>
+          <Point x="2500" y="2000" z="0"/>
+          <Point x="2500" y="2000" z="2000"/>
+          <Point x="2500" y="-2000" z="2000"/>
+        </Geometry>
+      </Panel>
+    </Structure>
+  </Vessel>
+</OCX>

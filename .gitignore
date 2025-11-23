@@ -81,3 +81,9 @@ htmlcov/
 *.a
 *.so
 *.dylib
+
+# Generated OCX/STL/PNG outputs
+backend/static/models/*.xml
+backend/static/models/*.stl
+backend/static/models/*.png
+backend/static/models/runner_*.py

@@ -38,12 +38,12 @@ class ToolCallingAgent:
         self,
         base_url: str = None,
         api_key: str = None,
-        model: str = "llama.cpp",
+        model: str = "groq/llama-3.1-8b-instruct",
         verbose: bool = True
     ):
         """
         Agent 초기화
-        
+            
         Args:
             base_url: LiteLLM proxy URL
             api_key: API 키

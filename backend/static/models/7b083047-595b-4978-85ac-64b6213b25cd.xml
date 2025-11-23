@@ -1,0 +1,42 @@
+<OCX version="3.0">
+  <Vessel name="SimpleVessel">
+    <Structure>
+      <Panel name="MainDeck" type="Deck">
+        <Material grade="A" thickness="10"/>
+        <Geometry type="Plate">
+          <Point x="0" y="-5000" z="3000"/>
+          <Point x="20000" y="-5000" z="3000"/>
+          <Point x="20000" y="5000" z="3000"/>
+          <Point x="0" y="5000" z="3000"/>
+        </Geometry>
+      </Panel>
+      <Panel name="SideShellPort" type="Shell">
+        <Material grade="A" thickness="10"/>
+        <Geometry type="Plate">
+          <Point x="0" y="-5000" z="0"/>
+          <Point x="20000" y="-5000" z="0"/>
+          <Point x="20000" y="-5000" z="3000"/>
+          <Point x="0" y="-5000" z="3000"/>
+        </Geometry>
+      </Panel>
+      <Panel name="SideShellStarboard" type="Shell">
+        <Material grade="A" thickness="10"/>
+        <Geometry type="Plate">
+          <Point x="0" y="5000" z="0"/>
+          <Point x="20000" y="5000" z="0"/>
+          <Point x="20000" y="5000" z="3000"/>
+          <Point x="0" y="5000" z="3000"/>
+        </Geometry>
+      </Panel>
+      <Panel name="TransverseBulkhead" type="Bulkhead">
+        <Material grade="A" thickness="10"/>
+        <Geometry type="Plate">
+          <Point x="10000" y="-5000" z="0"/>
+          <Point x="10000" y="5000" z="0"/>
+          <Point x="10000" y="5000" z="3000"/>
+          <Point x="10000" y="-5000" z="3000"/>
+        </Geometry>
+      </Panel>
+    </Structure>
+  </Vessel>
+</OCX>

@@ -1,40 +1,51 @@
 services:
-  llama-server:
-    image: ghcr.io/ggerganov/llama.cpp:server
-    platform: linux/amd64
-    command:
-      - -hf
-      - unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M
-      - --host
-      - 0.0.0.0
-      - --port
-      - "8080"
-      - --n-gpu-layers
-      - "-1"
-      - --threads
-      - "8"
-      - --threads-batch
-      - "6"
-      - --batch-size
-      - "512"
-      - --ubatch-size
-      - "256"
-      - --ctx-size
-      - "8192"
-      - --jinja
-    environment:
-      HUGGINGFACE_TOKEN: ${HUGGINGFACE_TOKEN}
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
-      - "8080:8080"
+      - "8000:8000"
     volumes:
-      - ./models:/models
+      - .:/app
+      - /app/.venv
+    environment:
+      - PYTHONPATH=/app
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: always
+
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: litellm_postgres
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: llmproxy
+      POSTGRES_PASSWORD: dbpassword9090
+    ports:
+      - "5433:5432" # External:Internal (로컬 PostgreSQL과 충돌 방지)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d litellm -U llmproxy" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
 
   litellm-proxy:
-    build:
-      context: .
-      args:
-        target: runtime
     image: ghcr.io/berriai/litellm:main-stable
     platform: linux/amd64
     command:
@@ -49,54 +60,38 @@ services:
     ports:
       - "4000:4000"
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      STORE_MODEL_IN_DB: ${LITELLM_STORE_MODEL_IN_DB}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://llmproxy:dbpassword9090@postgres:5432/litellm}
+      STORE_MODEL_IN_DB: ${LITELLM_STORE_MODEL_IN_DB:-True}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
-      LITELLM_DROP_PARAMS: ${LITELLM_DROP_PARAMS}
+      LITELLM_DROP_PARAMS: ${LITELLM_DROP_PARAMS:-true}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       GROQ_API_KEY: ${GROQ_API_KEY}
+      OPENPIPE_API_KEY: ${OPENPIPE_API_KEY}
     volumes:
       - ./litellm_config.yaml:/litellm_config.yaml:ro
     depends_on:
-      - llama-server
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: litellm_postgres
-    environment:
-      POSTGRES_DB: litellm
-      POSTGRES_USER: llmproxy
-      POSTGRES_PASSWORD: dbpassword9090
-    ports:
-      - "5433:5432"  # External:Internal (로컬 PostgreSQL과 충돌 방지)
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      # 선택: 초기 1회 자동 확장 활성화 (이미 생성된 볼륨이면 실행되지 않음)
-      # - ./init/01_pgvector.sql:/docker-entrypoint-initdb.d/01_pgvector.sql:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d litellm -U llmproxy"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
-  prometheus:
-    image: prom/prometheus
-    container_name: litellm_prometheus
-    volumes:
-      - prometheus_data:/prometheus
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"  # External:Internal
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--storage.tsdb.retention.time=15d"
-      - "--web.listen-address=:9090"
-    restart: unless-stopped
+  # prometheus:
+  #   image: prom/prometheus
+  #   container_name: litellm_prometheus
+  #   volumes:
+  #     - prometheus_data:/prometheus
+  #     - ./prometheus.yml:/etc/prometheus/prometheus.yml
+  #   ports:
+  #     - "9091:9090"  # External:Internal (9090 포트 충돌 방지)
+  #   command:
+  #     - "--config.file=/etc/prometheus/prometheus.yml"
+  #     - "--storage.tsdb.path=/prometheus"
+  #     - "--storage.tsdb.retention.time=15d"
+  #     - "--web.listen-address=:9090"
+  #   restart: unless-stopped
+
 volumes:
   postgres_data:
-  prometheus_data:
+    # prometheus_data:
+
 
 networks:
   default:

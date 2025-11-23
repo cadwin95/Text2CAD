@@ -1,0 +1,27 @@
+<OCX version="3.0">
+  <Vessel name="Yacht">
+    <Structure>
+      <!-- Example Deck Panel -->
+      <Panel name="MainDeck" type="Deck">
+        <Material grade="A" thickness="10"/>
+        <Geometry type="Plate">
+          <Point x="0" y="-5000" z="3000"/>
+          <Point x="20000" y="-5000" z="3000"/>
+          <Point x="20000" y="5000" z="3000"/>
+          <Point x="0" y="5000" z="3000"/>
+        </Geometry>
+      </Panel>
+      
+      <!-- Example Bulkhead Panel -->
+      <Panel name="TransverseBulkhead" type="Bulkhead">
+        <Material grade="A" thickness="12"/>
+        <Geometry type="Plate">
+          <Point x="10000" y="-5000" z="0"/>
+          <Point x="10000" y="5000" z="0"/>
+          <Point x="10000" y="5000" z="5000"/>
+          <Point x="10000" y="-5000" z="5000"/>
+        </Geometry>
+      </Panel>
+    </Structure>
+  </Vessel>
+</OCX>

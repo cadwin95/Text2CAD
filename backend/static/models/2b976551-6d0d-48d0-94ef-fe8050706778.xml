@@ -1,0 +1,15 @@
+<OCX version="3.0">
+  <Vessel name="DesignVessel">
+    <Structure>
+      <Panel name="SimplePlate" type="Deck">
+        <Material grade="A" thickness="10"/>
+        <Geometry type="Plate">
+          <Point x="0" y="0" z="0"/>
+          <Point x="1000" y="0" z="0"/>
+          <Point x="1000" y="1000" z="0"/>
+          <Point x="0" y="1000" z="0"/>
+        </Geometry>
+      </Panel>
+    </Structure>
+  </Vessel>
+</OCX>

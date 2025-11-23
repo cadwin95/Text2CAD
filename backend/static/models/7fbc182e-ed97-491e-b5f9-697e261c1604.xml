@@ -1,0 +1,15 @@
+<OCX version="3.0">
+  <Vessel name="DesignVessel">
+    <Structure>
+      <Panel name="SimpleBulkhead" type="Bulkhead">
+        <Material grade="A" thickness="10"/>
+        <Geometry type="Plate">
+          <Point x="0" y="-5000" z="0"/>
+          <Point x="0" y="5000" z="0"/>
+          <Point x="0" y="5000" z="3000"/>
+          <Point x="0" y="-5000" z="3000"/>
+        </Geometry>
+      </Panel>
+    </Structure>
+  </Vessel>
+</OCX>

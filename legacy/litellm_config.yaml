@@ -1,0 +1,24 @@
+model_list:
+  - model_name: openai/*
+    litellm_params:
+      model: openai/*
+      api_key: os.environ/OPENAI_API_KEY
+      api_base: https://api.openai.com/v1
+  - model_name: groq/*
+    litellm_params:
+      model: groq/* 
+      api_key: os.environ/GROQ_API_KEY
+      api_base: https://api.groq.com/openai/v1
+
+litellm_settings:
+  drop_params: true
+  success_callback: []  # OpenPipe 사용시 ["openpipe"] 추가
+  failure_callback: []
+  set_verbose: false
+  # openpipe_api_key: os.environ/OPENPIPE_API_KEY  # OpenPipe 사용시 주석 해제
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
+  store_model_in_db: true
+  store_prompts_in_spend_logs: true
